@@ -20,7 +20,9 @@ export const Container = styled.div`
   }
 `;
 
-export const Form = styled.form`
+export const Form = styled.form.attrs(props => ({
+  repoNotFound: props.repoNotFound,
+}))`
   margin-top: 30px;
   display: flex;
   flex-direction: row;
@@ -32,6 +34,14 @@ export const Form = styled.form`
     border-radius: 4px;
     font-size: 16px;
   }
+
+  ${props =>
+    props.repoNotFound &&
+    css`
+      input {
+        border: 1px solid #f04141;
+      }
+    `}
 `;
 
 const rotate = keyframes`

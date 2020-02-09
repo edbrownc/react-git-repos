@@ -2,10 +2,11 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 
 import PropTypes from 'prop-types';
+import Select from 'react-select';
 import api from '../../services/api';
 
 import { Container } from '../../components/Container';
-import { Loading, Owner, IssueList } from './styles';
+import { Loading, Owner, IssueList, Pagination, SelectState } from './styles';
 
 export default class Repository extends Component {
   static propTypes = {
@@ -20,6 +21,9 @@ export default class Repository extends Component {
     repository: {},
     issues: [],
     loading: true,
+    page: 1,
+    option: 'all',
+    per_page: 30,
   };
 
   async componentDidMount() {
@@ -31,8 +35,9 @@ export default class Repository extends Component {
       api.get(`/repos/${repoName}`),
       api.get(`/repos/${repoName}/issues`, {
         params: {
-          state: 'open',
-          per_page: 5,
+          state: 'all',
+          per_page: 30,
+          page: 1,
         },
       }),
     ]);
@@ -41,11 +46,57 @@ export default class Repository extends Component {
       repository: repository.data,
       issues: issues.data,
       loading: false,
+      page: 1,
     });
   }
 
+  setIssues = async () => {
+    const { match } = this.props;
+
+    const repoName = decodeURIComponent(match.params.repository);
+
+    const { page, option, per_page } = this.state;
+
+    const issues = await api.get(`/repos/${repoName}/issues`, {
+      params: {
+        state: option,
+        per_page,
+        page,
+      },
+    });
+
+    this.setState({
+      issues: issues.data,
+    });
+  };
+
+  onIssueStateChange = async e => {
+    await this.setState({
+      option: e.value,
+      page: 1,
+    });
+
+    this.setIssues();
+  };
+
+  handlePagination = async action => {
+    const { page } = this.state;
+
+    await this.setState({
+      page: action === 'next' ? page + 1 : page - 1,
+    });
+
+    this.setIssues();
+  };
+
   render() {
-    const { repository, issues, loading } = this.state;
+    const { repository, issues, loading, page } = this.state;
+
+    const options = [
+      { value: 'closed', label: 'Closed' },
+      { value: 'open', label: 'Open' },
+      { value: 'all', label: 'All' },
+    ];
 
     if (loading) {
       return <Loading>Loading</Loading>;
@@ -59,6 +110,14 @@ export default class Repository extends Component {
           <h1>{repository.name}</h1>
           <p>{repository.description}</p>
         </Owner>
+
+        <SelectState>
+          <Select
+            onChange={this.onIssueStateChange}
+            options={options}
+            placeholder="All"
+          />
+        </SelectState>
 
         <IssueList>
           {issues.map(issue => (
@@ -76,6 +135,23 @@ export default class Repository extends Component {
             </li>
           ))}
         </IssueList>
+        <Pagination>
+          <button
+            type="button"
+            disabled={page < 2}
+            onClick={() => this.handlePagination('prev')}
+          >
+            Prev
+          </button>
+          <span>Page {page}</span>
+          <button
+            type="button"
+            onClick={() => this.handlePagination('next')}
+            disabled={issues.length < 30}
+          >
+            Next
+          </button>
+        </Pagination>
       </Container>
     );
   }
