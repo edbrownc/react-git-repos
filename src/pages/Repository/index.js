@@ -23,7 +23,7 @@ export default class Repository extends Component {
     loading: true,
     page: 1,
     option: 'all',
-    per_page: 30,
+    perPage: 30,
   };
 
   async componentDidMount() {
@@ -55,12 +55,12 @@ export default class Repository extends Component {
 
     const repoName = decodeURIComponent(match.params.repository);
 
-    const { page, option, per_page } = this.state;
+    const { page, option, perPage } = this.state;
 
     const issues = await api.get(`/repos/${repoName}/issues`, {
       params: {
         state: option,
-        per_page,
+        per_page: perPage,
         page,
       },
     });
